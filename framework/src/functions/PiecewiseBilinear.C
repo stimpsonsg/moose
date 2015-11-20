@@ -59,56 +59,36 @@ PiecewiseBilinear::PiecewiseBilinear(const InputParameters & parameters) :
   ColumnMajorMatrix z;
   std::vector<Real> z_vec;
 
-  if (_data_file_name != "")
+  if (!_data_file_name.empty())
   {
-    if ((parameters.isParamValid("x")) ||
-        (parameters.isParamValid("y")) ||
-        (parameters.isParamValid("z")))
-    {
+    if ( parameters.isParamValid("x") || parameters.isParamValid("y") || parameters.isParamValid("z") )
       mooseError("In PiecewiseBilinear: Cannot specify 'data_file' and 'x', 'y', or 'z' together.");
-    }
     else
-    {
-      // Parse to get x, y, z
       parse( x, y, z );
-    }
   }
-  else if ((parameters.isParamValid("x")) ||
-           (parameters.isParamValid("y")) ||
-           (parameters.isParamValid("z")))
-  {
-    if (! ((parameters.isParamValid("x")) &&
-           (parameters.isParamValid("y")) &&
-           (parameters.isParamValid("z"))))
-    {
+
+  else if ( !(parameters.isParamValid("x") && parameters.isParamValid("y") && parameters.isParamValid("z")) )
       mooseError("In PiecewiseBilinear: 'x' and 'y' and 'z' must be specified if any one is specified.");
-    }
-    else
-    {
-      x = getParam<std::vector<Real> >("x");
-      y = getParam<std::vector<Real> >("y");
-      z_vec = getParam<std::vector<Real> >("z");
-      //check that size of z = (size of x)*(size of y)
-      if(z_vec.size() != x.size()*y.size()) {
-        mooseError("In PiecewiseBilinear: Size of z should be the size of x times the size of y.");
-      }
-      
-      //reshape and populate z matrix
-      z.reshape(y.size(),x.size());
-      int idx=0;
-      for(int i=0; i < y.size(); i++)
-      { 
-        for(int j=0; j < x.size(); j++) 
-        {
-          z(i,j)=z_vec[idx];
-          idx+=1;
-        }
-      }
-    }
-  }
+
   else
   {
-    mooseError("In PiecewiseBilinear, 'data_file' or 'x' and 'y' and 'z' must be specified.");
+    x = getParam<std::vector<Real> >("x");
+    y = getParam<std::vector<Real> >("y");
+    z_vec = getParam<std::vector<Real> >("z");
+
+    //check that size of z = (size of x)*(size of y)
+    if (z_vec.size() != x.size()*y.size())
+      mooseError("In PiecewiseBilinear: Size of z should be the size of x times the size of y.");
+
+    //reshape and populate z matrix
+    z.reshape(y.size(),x.size());
+    int idx = 0;
+    for (unsigned int i = 0; i < y.size(); i++)
+      for (unsigned int j = 0; j < x.size(); j++)
+      {
+        z(i,j) = z_vec[idx];
+        idx += 1;
+      }
   }
 
   _bilinear_interp.reset(new BilinearInterpolation(x, y, z));
